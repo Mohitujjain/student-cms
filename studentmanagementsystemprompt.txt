@@ -1,0 +1,100 @@
+Build a complete Student Management System (SMS) using Node.js + Express + MongoDB (Mongoose) + EJS, deployable on Render.com. I need exactly 4 files: server.js, views/app.ejs, views/login.ejs, package.json.
+
+=== package.json ===
+Name: "college-cms-node", version 1.0.0, main: server.js
+Scripts: "start": "node server.js", "dev": "nodemon server.js"
+Dependencies: body-parser ^1.20.2, ejs ^3.1.9, express ^4.18.2, express-session ^1.17.3, mongoose ^7.5.0
+engines.node: ">=16.0.0"
+
+=== server.js ===
+- Read MONGODB_URI strictly from process.env.MONGODB_URI. If missing, console.error two lines explaining it must be set in Render.com env vars, then process.exit(1).
+- express-session with a hardcoded secret 'secret_key_cms', resave: false, saveUninitialized: true.
+- view engine ejs, views folder = path.join(__dirname, 'views').
+- Mongoose models:
+  - Course: { name: String }
+  - Subject: { name: String, course_id: ref Course }
+  - User: { full_name, email, password (default '123456'), role: enum ['admin','staff','student'], gender, address, profile_pic (default 'default.png'), course_id: ref Course, session_id }
+  - Attendance: { student_id: ref User, subject_id: ref Subject, course_id: ref Course, status, date (String) }
+  - Score: { student_id: ref User, subject_id: ref Subject, score: Number }
+  - Leave: { user_id: ref User, role, date, message, status (default 'Pending'), created_at (default Date.now) }
+  - Notification: { message, type, created_at default Date.now }
+  - Feedback: { student_id: ref User, message, created_at default Date.now }
+- On successful DB connection, call initAdmin() which creates one admin user (email: 'admin@gmail.com', password: '123456', role: 'admin', full_name: 'Administrator') only if no admin exists yet.
+- requireAuth middleware: if no req.session.user, redirect to /login, else next().
+- Routes:
+  - GET / → redirect /app
+  - GET /login → render login.ejs passing error from req.query.error
+  - POST /login → find User by exact email+password match, on success set req.session.user and redirect /app?page=dashboard, on failure redirect /login?error=Invalid credentials, wrap in try/catch redirecting to /login?error=Database Error
+  - GET /logout → destroy session, redirect /login
+  - A SINGLE shared handler function `appHandler` used for BOTH `app.get('/app', requireAuth, appHandler)` and `app.post('/app', requireAuth, appHandler)`. Do not split into separate REST routes.
+- Inside appHandler:
+  1. Read success_msg from req.query.msg, page from req.query.page (default 'dashboard'), user from req.session.user.
+  2. Handle deletion via GET query params: if req.query.delete && table && id present — delete from Course/Subject/User depending on table value ('courses'/'subjects'/'staff' or 'students'), then redirect back to `/app?page=${req.query.page}&msg=Record deleted successfully.`
+  3. If req.method === 'POST', switch on req.body.action string:
+     - 'add_course' → Course.create({name})
+     - 'add_subject' → Subject.create({name, course_id})
+     - 'add_staff' → User.create({...req.body, role:'staff'})
+     - 'add_student' → User.create({...req.body, role:'student'})
+     - 'save_attendance' → destructure {date, course_id, subject_id, attendance}, first Attendance.deleteMany matching date/subject_id/course_id, then loop attendance object keys (student ids) and Attendance.create for each with the posted status
+     - 'save_scores' → destructure {subject_id, score}, loop score object keys, for non-empty values do Score.findOneAndUpdate({student_id, subject_id}, {score}, {upsert:true, new:true})
+     - 'apply_leave' → Leave.create({user_id: user._id, role: user.role, date, message})
+     - 'update_leave' → Leave.findByIdAndUpdate(leave_id, {status})
+     - 'send_notification' → Notification.create({message, type})
+     - 'send_feedback' → Feedback.create({student_id: user._id, message})
+     Set an appropriate success_msg string per action, then redirect to `/app?page=${page}&msg=${success_msg}` and return.
+  4. For GET rendering, build a `data` object always including: user, page, success_msg, and default empty arrays/objects fetched_students:[], exam_students:[], existing_scores:{}, existing_attendance:{}.
+  5. Always fetch data.courses = all Courses, data.subjects = all Subjects populated with course_id.
+  6. Page-specific data fetching (only run the query if page matches):
+     - 'dashboard': total_students, total_staff, total_courses, total_subjects (counts), att_count = Attendance count; if user.role==='student' also total_present (Attendance count status Present for this student) and total_total (all Attendance count for this student)
+     - 'manage_staff': data.staffs = Users where role staff
+     - 'manage_students': data.students = Users where role student, populated course_id
+     - 'manage_attendance' or 'take_attendance': if req.query.fetch_course && fetch_date && fetch_subject present — fetch students in that course, fetch existing Attendance for that date+subject and map student_id→status into existing_attendance, and pass back fetch_date/fetch_course/fetch_subject
+     - 'manage_exams': if fetch_course && fetch_subject present — fetch students in course, fetch existing Scores for subject and map student_id→score, pass back fetch_course/fetch_subject
+     - 'notifications' (admin only): data.leaves = all Leave populated user_id, sorted -created_at
+     - 'staff_notifs' or 'student_notifs': data.notifs = Notifications filtered by type matching user.role (staff/student), sorted -created_at
+     - 'apply_leave': data.my_leaves = Leave where user_id = current user, sorted -created_at
+     - 'view_attendance' (staff only): data.logs = all Attendance populated student_id+subject_id, sorted -date, limit 50
+     - 'my_attendance' (student only): data.my_att = Attendance for this student, populated subject_id, sorted -date
+     - 'exam_results' (student only): data.scores = Score for this student, populated subject_id
+  7. res.render('app', data); wrap the whole try block in try/catch, on error console.error and res.status(500).send("An error occurred while loading the page.")
+- Catch-all 404 route returning `Route Not Found: ${req.method} ${req.url}`
+- app.listen(PORT, '0.0.0.0', ...) with PORT from process.env.PORT || 3000
+
+=== views/login.ejs ===
+Full standalone HTML page (not using app.ejs layout). Centered card design:
+- Bootstrap 5.3.0 CDN, Google Font 'Inter' (weights 300-700)
+- body: flex centered, height 100vh, background #F4F7FE
+- .login-card: white, 50px 40px padding, 24px border-radius, subtle shadow, max-width 420px
+- .logo-box: 50x50px, orange-to-yellow gradient (#FF9C00 to #FFC048), rounded 12px, letter "S" centered, white bold text, margin auto centered above title
+- Heading "Welcome Back", subtext "Student Management System"
+- Conditional Bootstrap alert-danger showing `error` if passed via EJS
+- Form POST to /login with email (name="email", text input) and password (name="password") fields, styled rounded inputs (#F8FAFC bg, 12px radius), indigo focus border (#6366F1)
+- Submit button "Sign In", indigo (#6366F1, hover #4F46E5), rounded, full width
+
+=== views/app.ejs ===
+This is ONE template file handling ALL pages via a `page` variable check — do not create separate view files per page.
+
+Global design system (CSS variables): --sidebar-bg: #1B1C31, --sidebar-hover: #2B2DFB, --bg-color: #F4F7FE, --text-main: #2B3674, --text-muted: #A3AED0, --card-radius: 20px. Font: Inter. Include Bootstrap 5.3.0, Font Awesome 6.4.0, Google Font Inter, Chart.js CDN.
+
+Layout:
+- Fixed left sidebar (280px wide, full height, dark bg #1B1C31): brand box with gradient "S" logo icon + "SMS / Management System" text; nav links conditionally rendered based on `user.role` (admin/staff/student each get a different set of nav-header groups and links matching what's in the code — Dashboard, then role-specific ACADEMIC/USERS/REQUESTS/OTHERS sections with Font Awesome icons, each link highlighting `active` class when `page` matches); a "Keep it up!" motivational trophy card at sidebar bottom; Logout link in red.
+- Main content area (margin-left 280px): top navbar with page title (auto-capitalized from `page` var, underscores replaced with spaces) + welcome message with user's full_name, plus a search bar, calendar icon button, notification bell icon button with a "3" badge, and a profile button showing a ui-avatars.com generated avatar + name + role.
+- Dismissible Bootstrap success alert shown when success_msg is present.
+
+Page content (all inside one big EJS if/else-if chain on `page` variable):
+1. **dashboard**: Row of 5 gradient metric cards (bg-purple #6366F1, bg-green #00B87C, bg-orange #FF9C00, bg-blue #0075FF, bg-pink #FF4C61) showing Total Courses, Subjects, Attendance %, Total Students, Total Staff — each with a circular translucent icon badge and fallback dummy numbers if data undefined. Below: two-column row — left 8-col card with a Chart.js line chart "Attendance Overview" (Present vs Absent lines, green/red, over dates 1-31 May, sample data), right 4-col card with a Chart.js doughnut chart "Performance Metrics" (Excellent/Good/Needs Work, green/blue/red). Wrap both canvases in a `position:relative; height:Npx` div to prevent Chart.js infinite-expansion resize bugs.
+2. **courses / subjects** (shared block): left column form to add a Course or Subject (subject form includes a course dropdown), right column table listing items with a delete button (red trash icon linking to the GET delete pattern).
+3. **manage_staff / manage_students** (shared block): table of users with avatar (ui-avatars.com), name, email, gender, (course for students), delete action; a Bootstrap modal triggered by "Add New" button with a form for full_name, email, gender select, course select (students only), address textarea.
+4. **manage_attendance / take_attendance** (shared block): a GET filter form (date, course select, subject select, Fetch button) that reloads the page with query params; if fetched_students present, a POST form listing each student with Present/Absent radio buttons pre-checked from existing_attendance, submit "Save Attendance" (posts action=save_attendance with hidden date/course_id/subject_id).
+5. **manage_exams**: similar GET filter (course, subject) then POST form listing each student with a number input (0-100) for score, prefilled from existing_scores, submit action=save_scores.
+6. **apply_leave**: left column form (date + reason textarea) posting action=apply_leave; right column table of my_leaves history with colored status badges (green Approved/red Declined/yellow Pending).
+7. **notifications** (admin only): table of all pending/processed leave requests showing user name, role badge, date, message, status badge, and for Pending rows two inline forms with green check / red X buttons posting action=update_leave with status Approved/Declined.
+8. **notify**: broadcast form — audience select (student/staff), message textarea, Send button, posting action=send_notification.
+9. **staff_notifs / student_notifs**: list of Notification cards filtered to the role, each showing a bell icon, message, and formatted timestamp; "No new notices." fallback message.
+10. **view_attendance / my_attendance** (shared block): table of attendance logs (view_attendance shows student name column too), with green/red status pill badges.
+11. **exam_results**: grid of cards (one per subject score) with a colored top border, subject name, big bold score number "out of 100"; fallback info alert "No exam scores available yet."
+12. **feedback**: simple textarea form posting action=send_feedback.
+
+Use Bootstrap 5 utility classes throughout, rounded-3 buttons, consistent card styling (white bg, 20px radius, soft shadow, no border), and match the exact CSS class names and structure described above so the file is internally consistent with server.js's expected data fields.
+
+Give me all 4 files in full, ready to deploy on Render.com with only MONGODB_URI as a required env var.
