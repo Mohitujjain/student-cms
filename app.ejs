@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= page.charAt(0).toUpperCase() + page.slice(1).replace(/_/g, ' ') %> | SMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --sidebar-bg: #1B1C31;
+      --sidebar-hover: #2B2DFB;
+      --bg-color: #F4F7FE;
+      --text-main: #2B3674;
+      --text-muted: #A3AED0;
+      --card-radius: 20px;
+    }
+    * { font-family: 'Inter', sans-serif; }
+    body { background: var(--bg-color); margin: 0; color: var(--text-main); }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
+      background: var(--sidebar-bg); color: #fff; padding: 24px 18px;
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .brand-box { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+    .brand-logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #FF9C00, #FFC048);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 20px; color: #fff;
+    }
+    .brand-text b { font-size: 16px; display: block; }
+    .brand-text span { font-size: 12px; color: var(--text-muted); }
+    .nav-header {
+      font-size: 11px; text-transform: uppercase; color: var(--text-muted);
+      margin: 18px 0 8px 10px; letter-spacing: 1px;
+    }
+    .nav-link-item {
+      display: flex; align-items: center; gap: 12px;
+      color: #C9CCE5; padding: 11px 14px; border-radius: 12px;
+      text-decoration: none; font-size: 14px; margin-bottom: 4px;
+      transition: all 0.15s;
+    }
+    .nav-link-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-link-item.active { background: var(--sidebar-hover); color: #fff; }
+    .nav-link-item i { width: 18px; text-align: center; }
+    .keep-card {
+      margin-top: auto; background: linear-gradient(135deg, #6366F1, #4F46E5);
+      border-radius: 16px; padding: 18px; text-align: center; margin-top: 24px;
+    }
+    .keep-card i { font-size: 26px; color: #FFC048; }
+    .keep-card p { font-size: 13px; margin: 8px 0 0; color: #E2E4FF; }
+    .logout-link { color: #FF6B6B !important; }
+
+    /* Main */
+    .main { margin-left: 280px; padding: 24px 30px; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fff; border-radius: var(--card-radius); padding: 16px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 24px;
+    }
+    .topbar h4 { margin: 0; font-weight: 700; }
+    .topbar small { color: var(--text-muted); }
+    .top-actions { display: flex; align-items: center; gap: 14px; }
+    .icon-btn {
+      width: 42px; height: 42px; border-radius: 50%; border: none;
+      background: var(--bg-color); position: relative; color: var(--text-main);
+    }
+    .icon-btn .badge {
+      position: absolute; top: -2px; right: -2px; font-size: 10px;
+    }
+    .search-box {
+      background: var(--bg-color); border: none; border-radius: 30px;
+      padding: 10px 18px; width: 200px;
+    }
+    .profile-btn {
+      display: flex; align-items: center; gap: 10px; background: var(--bg-color);
+      border: none; border-radius: 30px; padding: 6px 14px 6px 6px;
+    }
+    .profile-btn img { width: 34px; height: 34px; border-radius: 50%; }
+    .profile-btn b { font-size: 13px; }
+    .profile-btn span { font-size: 11px; color: var(--text-muted); display: block; }
+
+    /* Cards */
+    .card-soft {
+      background: #fff; border-radius: var(--card-radius); border: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+    .metric-card {
+      border-radius: var(--card-radius); padding: 22px; color: #fff;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .metric-icon {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); display: flex;
+      align-items: center; justify-content: center; font-size: 22px;
+    }
+    .metric-card h3 { margin: 0; font-weight: 700; }
+    .metric-card p { margin: 0; opacity: 0.9; font-size: 13px; }
+    .bg-purple { background: #6366F1; }
+    .bg-green { background: #00B87C; }
+    .bg-orange { background: #FF9C00; }
+    .bg-blue { background: #0075FF; }
+    .bg-pink { background: #FF4C61; }
+
+    .table thead th { color: var(--text-muted); font-size: 12px; text-transform: uppercase; border: none; }
+    .table td { vertical-align: middle; border-color: #EEF1FA; }
+    .avatar-sm { width: 36px; height: 36px; border-radius: 50%; }
+    .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .btn { border-radius: 12px; }
+    .result-card { border-radius: var(--card-radius); background: #fff; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand-box">
+      <div class="brand-logo">S</div>
+      <div class="brand-text">
+        <b>SMS</b>
+        <span>Management System</span>
+      </div>
+    </div>
+
+    <a href="/app?page=dashboard" class="nav-link-item <%= page==='dashboard'?'active':'' %>">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+
+    <% if (user.role === 'admin') { %>
+      <div class="nav-header">Academic</div>
+      <a href="/app?page=courses" class="nav-link-item <%= page==='courses'?'active':'' %>"><i class="fa-solid fa-book"></i> Courses</a>
+      <a href="/app?page=subjects" class="nav-link-item <%= page==='subjects'?'active':'' %>"><i class="fa-solid fa-layer-group"></i> Subjects</a>
+      <div class="nav-header">Users</div>
+      <a href="/app?page=manage_staff" class="nav-link-item <%= page==='manage_staff'?'active':'' %>"><i class="fa-solid fa-user-tie"></i> Manage Staff</a>
+      <a href="/app?page=manage_students" class="nav-link-item <%= page==='manage_students'?'active':'' %>"><i class="fa-solid fa-user-graduate"></i> Manage Students</a>
+      <div class="nav-header">Requests</div>
+      <a href="/app?page=notifications" class="nav-link-item <%= page==='notifications'?'active':'' %>"><i class="fa-solid fa-envelope-open-text"></i> Leave Requests</a>
+      <a href="/app?page=notify" class="nav-link-item <%= page==='notify'?'active':'' %>"><i class="fa-solid fa-bullhorn"></i> Send Notice</a>
+    <% } else if (user.role === 'staff') { %>
+      <div class="nav-header">Academic</div>
+      <a href="/app?page=take_attendance" class="nav-link-item <%= page==='take_attendance'?'active':'' %>"><i class="fa-solid fa-clipboard-check"></i> Take Attendance</a>
+      <a href="/app?page=view_attendance" class="nav-link-item <%= page==='view_attendance'?'active':'' %>"><i class="fa-solid fa-list-check"></i> View Attendance</a>
+      <a href="/app?page=manage_exams" class="nav-link-item <%= page==='manage_exams'?'active':'' %>"><i class="fa-solid fa-pen-to-square"></i> Manage Exams</a>
+      <div class="nav-header">Requests</div>
+      <a href="/app?page=apply_leave" class="nav-link-item <%= page==='apply_leave'?'active':'' %>"><i class="fa-solid fa-plane-departure"></i> Apply Leave</a>
+      <div class="nav-header">Others</div>
+      <a href="/app?page=staff_notifs" class="nav-link-item <%= page==='staff_notifs'?'active':'' %>"><i class="fa-solid fa-bell"></i> Notifications</a>
+    <% } else { %>
+      <div class="nav-header">Academic</div>
+      <a href="/app?page=my_attendance" class="nav-link-item <%= page==='my_attendance'?'active':'' %>"><i class="fa-solid fa-calendar-check"></i> My Attendance</a>
+      <a href="/app?page=exam_results" class="nav-link-item <%= page==='exam_results'?'active':'' %>"><i class="fa-solid fa-award"></i> Exam Results</a>
+      <div class="nav-header">Requests</div>
+      <a href="/app?page=apply_leave" class="nav-link-item <%= page==='apply_leave'?'active':'' %>"><i class="fa-solid fa-plane-departure"></i> Apply Leave</a>
+      <div class="nav-header">Others</div>
+      <a href="/app?page=student_notifs" class="nav-link-item <%= page==='student_notifs'?'active':'' %>"><i class="fa-solid fa-bell"></i> Notifications</a>
+      <a href="/app?page=feedback" class="nav-link-item <%= page==='feedback'?'active':'' %>"><i class="fa-solid fa-comment-dots"></i> Feedback</a>
+    <% } %>
+
+    <div class="keep-card">
+      <i class="fa-solid fa-trophy"></i>
+      <p>Keep it up! Every day counts.</p>
+    </div>
+
+    <a href="/logout" class="nav-link-item logout-link"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <h4><%= page.charAt(0).toUpperCase() + page.slice(1).replace(/_/g, ' ') %></h4>
+        <small>Welcome back, <%= user.full_name %> 👋</small>
+      </div>
+      <div class="top-actions">
+        <input type="text" class="search-box" placeholder="Search...">
+        <button class="icon-btn"><i class="fa-regular fa-calendar"></i></button>
+        <button class="icon-btn"><i class="fa-regular fa-bell"></i><span class="badge bg-danger rounded-pill">3</span></button>
+        <button class="profile-btn">
+          <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.full_name) %>&background=6366F1&color=fff" alt="">
+          <div class="text-start">
+            <b><%= user.full_name %></b>
+            <span><%= user.role %></span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Success alert -->
+    <% if (success_msg) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= success_msg %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+
+    <!-- ===================== PAGE CONTENT ===================== -->
+
+    <% if (page === 'dashboard') { %>
+      <div class="row g-3 mb-4">
+        <div class="col"><div class="metric-card bg-purple"><div class="metric-icon"><i class="fa-solid fa-book"></i></div><div><h3><%= (typeof total_courses!=='undefined')?total_courses:12 %></h3><p>Total Courses</p></div></div></div>
+        <div class="col"><div class="metric-card bg-green"><div class="metric-icon"><i class="fa-solid fa-layer-group"></i></div><div><h3><%= (typeof total_subjects!=='undefined')?total_subjects:34 %></h3><p>Subjects</p></div></div></div>
+        <div class="col"><div class="metric-card bg-orange"><div class="metric-icon"><i class="fa-solid fa-percent"></i></div><div>
+          <h3><%
+            let pct = 92;
+            if (user.role === 'student' && typeof total_total !== 'undefined' && total_total > 0) {
+              pct = Math.round((total_present / total_total) * 100);
+            }
+          %><%= pct %>%</h3><p>Attendance</p></div></div></div>
+        <div class="col"><div class="metric-card bg-blue"><div class="metric-icon"><i class="fa-solid fa-user-graduate"></i></div><div><h3><%= (typeof total_students!=='undefined')?total_students:248 %></h3><p>Total Students</p></div></div></div>
+        <div class="col"><div class="metric-card bg-pink"><div class="metric-icon"><i class="fa-solid fa-user-tie"></i></div><div><h3><%= (typeof total_staff!=='undefined')?total_staff:18 %></h3><p>Total Staff</p></div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3">Attendance Overview</h5>
+            <div style="position:relative; height:320px;">
+              <canvas id="attChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3">Performance Metrics</h5>
+            <div style="position:relative; height:320px;">
+              <canvas id="perfChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const days = Array.from({length:31},(_,i)=>i+1);
+        new Chart(document.getElementById('attChart'), {
+          type: 'line',
+          data: {
+            labels: days.map(d=>d+' May'),
+            datasets: [
+              { label:'Present', data: days.map(()=>Math.floor(180+Math.random()*60)), borderColor:'#00B87C', tension:0.4, fill:false },
+              { label:'Absent', data: days.map(()=>Math.floor(10+Math.random()*40)), borderColor:'#FF4C61', tension:0.4, fill:false }
+            ]
+          },
+          options: { responsive:true, maintainAspectRatio:false }
+        });
+        new Chart(document.getElementById('perfChart'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Excellent','Good','Needs Work'],
+            datasets: [{ data:[45,35,20], backgroundColor:['#00B87C','#0075FF','#FF4C61'] }]
+          },
+          options: { responsive:true, maintainAspectRatio:false }
+        });
+      </script>
+
+    <% } else if (page === 'courses' || page === 'subjects') { %>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3">Add <%= page === 'courses' ? 'Course' : 'Subject' %></h5>
+            <form method="POST" action="/app?page=<%= page %>">
+              <input type="hidden" name="action" value="<%= page === 'courses' ? 'add_course' : 'add_subject' %>">
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" required>
+              </div>
+              <% if (page === 'subjects') { %>
+                <div class="mb-3">
+                  <label class="form-label">Course</label>
+                  <select name="course_id" class="form-select" required>
+                    <option value="">Select Course</option>
+                    <% courses.forEach(c => { %>
+                      <option value="<%= c._id %>"><%= c.name %></option>
+                    <% }) %>
+                  </select>
+                </div>
+              <% } %>
+              <button class="btn btn-primary w-100">Add</button>
+            </form>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3"><%= page === 'courses' ? 'Courses' : 'Subjects' %> List</h5>
+            <table class="table">
+              <thead><tr><th>Name</th><% if (page==='subjects'){ %><th>Course</th><% } %><th>Action</th></tr></thead>
+              <tbody>
+                <% const items = page === 'courses' ? courses : subjects; %>
+                <% items.forEach(item => { %>
+                  <tr>
+                    <td class="fw-semibold"><%= item.name %></td>
+                    <% if (page==='subjects'){ %><td><%= item.course_id ? item.course_id.name : '-' %></td><% } %>
+                    <td><a href="/app?page=<%= page %>&delete=1&table=<%= page %>&id=<%= item._id %>" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    <% } else if (page === 'manage_staff' || page === 'manage_students') { %>
+      <% const isStudent = page === 'manage_students'; %>
+      <% const list = isStudent ? students : staffs; %>
+      <div class="card-soft p-4">
+        <div class="d-flex justify-content-between mb-3">
+          <h5 class="fw-bold mb-0"><%= isStudent ? 'Students' : 'Staff' %></h5>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fa-solid fa-plus"></i> Add New</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Name</th><th>Email</th><th>Gender</th><% if (isStudent){ %><th>Course</th><% } %><th>Action</th></tr></thead>
+          <tbody>
+            <% (list||[]).forEach(u => { %>
+              <tr>
+                <td><img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(u.full_name||'') %>&background=6366F1&color=fff" class="avatar-sm me-2"><%= u.full_name %></td>
+                <td><%= u.email %></td>
+                <td><%= u.gender || '-' %></td>
+                <% if (isStudent){ %><td><%= u.course_id ? u.course_id.name : '-' %></td><% } %>
+                <td><a href="/app?page=<%= page %>&delete=1&table=<%= isStudent?'students':'staff' %>&id=<%= u._id %>" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content" style="border-radius:20px;">
+            <form method="POST" action="/app?page=<%= page %>">
+              <input type="hidden" name="action" value="<%= isStudent ? 'add_student' : 'add_staff' %>">
+              <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Add New <%= isStudent ? 'Student' : 'Staff' %></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Full Name</label><input type="text" name="full_name" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">Gender</label>
+                  <select name="gender" class="form-select"><option>Male</option><option>Female</option><option>Other</option></select>
+                </div>
+                <% if (isStudent){ %>
+                  <div class="mb-3"><label class="form-label">Course</label>
+                    <select name="course_id" class="form-select" required>
+                      <option value="">Select Course</option>
+                      <% courses.forEach(c => { %><option value="<%= c._id %>"><%= c.name %></option><% }) %>
+                    </select>
+                  </div>
+                <% } %>
+                <div class="mb-3"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+              </div>
+              <div class="modal-footer border-0">
+                <button class="btn btn-primary w-100">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    <% } else if (page === 'manage_attendance' || page === 'take_attendance') { %>
+      <div class="card-soft p-4 mb-3">
+        <h5 class="fw-bold mb-3">Fetch Attendance Sheet</h5>
+        <form method="GET" action="/app" class="row g-2 align-items-end">
+          <input type="hidden" name="page" value="<%= page %>">
+          <div class="col-md-3"><label class="form-label">Date</label><input type="date" name="fetch_date" class="form-control" required></div>
+          <div class="col-md-3"><label class="form-label">Course</label>
+            <select name="fetch_course" class="form-select" required><option value="">Select</option>
+              <% courses.forEach(c => { %><option value="<%= c._id %>"><%= c.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="col-md-3"><label class="form-label">Subject</label>
+            <select name="fetch_subject" class="form-select" required><option value="">Select</option>
+              <% subjects.forEach(s => { %><option value="<%= s._id %>"><%= s.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="col-md-3"><button class="btn btn-primary w-100">Fetch</button></div>
+        </form>
+      </div>
+
+      <% if (fetched_students && fetched_students.length) { %>
+        <div class="card-soft p-4">
+          <form method="POST" action="/app?page=<%= page %>">
+            <input type="hidden" name="action" value="save_attendance">
+            <input type="hidden" name="date" value="<%= fetch_date %>">
+            <input type="hidden" name="course_id" value="<%= fetch_course %>">
+            <input type="hidden" name="subject_id" value="<%= fetch_subject %>">
+            <table class="table">
+              <thead><tr><th>Student</th><th>Status</th></tr></thead>
+              <tbody>
+                <% fetched_students.forEach(s => { const cur = existing_attendance[s._id] || 'Present'; %>
+                  <tr>
+                    <td><%= s.full_name %></td>
+                    <td>
+                      <label class="me-3"><input type="radio" name="attendance[<%= s._id %>]" value="Present" <%= cur==='Present'?'checked':'' %>> Present</label>
+                      <label><input type="radio" name="attendance[<%= s._id %>]" value="Absent" <%= cur==='Absent'?'checked':'' %>> Absent</label>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <button class="btn btn-primary">Save Attendance</button>
+          </form>
+        </div>
+      <% } %>
+
+    <% } else if (page === 'manage_exams') { %>
+      <div class="card-soft p-4 mb-3">
+        <h5 class="fw-bold mb-3">Fetch Exam Sheet</h5>
+        <form method="GET" action="/app" class="row g-2 align-items-end">
+          <input type="hidden" name="page" value="manage_exams">
+          <div class="col-md-4"><label class="form-label">Course</label>
+            <select name="fetch_course" class="form-select" required><option value="">Select</option>
+              <% courses.forEach(c => { %><option value="<%= c._id %>"><%= c.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="col-md-4"><label class="form-label">Subject</label>
+            <select name="fetch_subject" class="form-select" required><option value="">Select</option>
+              <% subjects.forEach(s => { %><option value="<%= s._id %>"><%= s.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="col-md-4"><button class="btn btn-primary w-100">Fetch</button></div>
+        </form>
+      </div>
+
+      <% if (exam_students && exam_students.length) { %>
+        <div class="card-soft p-4">
+          <form method="POST" action="/app?page=manage_exams">
+            <input type="hidden" name="action" value="save_scores">
+            <input type="hidden" name="subject_id" value="<%= fetch_subject %>">
+            <table class="table">
+              <thead><tr><th>Student</th><th>Score (0-100)</th></tr></thead>
+              <tbody>
+                <% exam_students.forEach(s => { const val = (existing_scores[s._id]!==undefined)?existing_scores[s._id]:''; %>
+                  <tr>
+                    <td><%= s.full_name %></td>
+                    <td><input type="number" min="0" max="100" name="score[<%= s._id %>]" value="<%= val %>" class="form-control" style="max-width:120px;"></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <button class="btn btn-primary">Save Scores</button>
+          </form>
+        </div>
+      <% } %>
+
+    <% } else if (page === 'apply_leave') { %>
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3">Apply for Leave</h5>
+            <form method="POST" action="/app?page=apply_leave">
+              <input type="hidden" name="action" value="apply_leave">
+              <div class="mb-3"><label class="form-label">Date</label><input type="date" name="date" class="form-control" required></div>
+              <div class="mb-3"><label class="form-label">Reason</label><textarea name="message" class="form-control" rows="3" required></textarea></div>
+              <button class="btn btn-primary w-100">Submit</button>
+            </form>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card-soft p-4">
+            <h5 class="fw-bold mb-3">My Leave History</h5>
+            <table class="table">
+              <thead><tr><th>Date</th><th>Reason</th><th>Status</th></tr></thead>
+              <tbody>
+                <% (my_leaves||[]).forEach(l => {
+                  let cls = 'bg-warning text-dark';
+                  if (l.status==='Approved') cls='bg-success';
+                  else if (l.status==='Declined') cls='bg-danger';
+                %>
+                  <tr><td><%= l.date %></td><td><%= l.message %></td><td><span class="status-pill <%= cls %>"><%= l.status %></span></td></tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    <% } else if (page === 'notifications') { %>
+      <div class="card-soft p-4">
+        <h5 class="fw-bold mb-3">Leave Requests</h5>
+        <table class="table">
+          <thead><tr><th>User</th><th>Role</th><th>Date</th><th>Message</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <% (leaves||[]).forEach(l => {
+              let cls = 'bg-warning text-dark';
+              if (l.status==='Approved') cls='bg-success';
+              else if (l.status==='Declined') cls='bg-danger';
+            %>
+              <tr>
+                <td><%= l.user_id ? l.user_id.full_name : 'Unknown' %></td>
+                <td><span class="status-pill bg-primary"><%= l.role %></span></td>
+                <td><%= l.date %></td>
+                <td><%= l.message %></td>
+                <td><span class="status-pill <%= cls %>"><%= l.status %></span></td>
+                <td>
+                  <% if (l.status === 'Pending') { %>
+                    <form method="POST" action="/app?page=notifications" class="d-inline">
+                      <input type="hidden" name="action" value="update_leave">
+                      <input type="hidden" name="leave_id" value="<%= l._id %>">
+                      <input type="hidden" name="status" value="Approved">
+                      <button class="btn btn-sm btn-success"><i class="fa-solid fa-check"></i></button>
+                    </form>
+                    <form method="POST" action="/app?page=notifications" class="d-inline">
+                      <input type="hidden" name="action" value="update_leave">
+                      <input type="hidden" name="leave_id" value="<%= l._id %>">
+                      <input type="hidden" name="status" value="Declined">
+                      <button class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i></button>
+                    </form>
+                  <% } else { %> - <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+    <% } else if (page === 'notify') { %>
+      <div class="card-soft p-4" style="max-width:560px;">
+        <h5 class="fw-bold mb-3">Broadcast Notification</h5>
+        <form method="POST" action="/app?page=notify">
+          <input type="hidden" name="action" value="send_notification">
+          <div class="mb-3"><label class="form-label">Audience</label>
+            <select name="type" class="form-select"><option value="student">Students</option><option value="staff">Staff</option></select>
+          </div>
+          <div class="mb-3"><label class="form-label">Message</label><textarea name="message" class="form-control" rows="4" required></textarea></div>
+          <button class="btn btn-primary">Send</button>
+        </form>
+      </div>
+
+    <% } else if (page === 'staff_notifs' || page === 'student_notifs') { %>
+      <div class="card-soft p-4">
+        <h5 class="fw-bold mb-3">Notifications</h5>
+        <% if (notifs && notifs.length) { %>
+          <% notifs.forEach(n => { %>
+            <div class="d-flex align-items-start gap-3 p-3 mb-2" style="background:var(--bg-color); border-radius:14px;">
+              <i class="fa-solid fa-bell text-primary mt-1"></i>
+              <div>
+                <div class="fw-semibold"><%= n.message %></div>
+                <small class="text-muted"><%= new Date(n.created_at).toLocaleString() %></small>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="alert alert-info mb-0">No new notices.</div>
+        <% } %>
+      </div>
+
+    <% } else if (page === 'view_attendance' || page === 'my_attendance') { %>
+      <% const isView = page === 'view_attendance'; %>
+      <% const logsArr = isView ? logs : my_att; %>
+      <div class="card-soft p-4">
+        <h5 class="fw-bold mb-3"><%= isView ? 'Attendance Logs' : 'My Attendance' %></h5>
+        <table class="table">
+          <thead><tr><% if (isView){ %><th>Student</th><% } %><th>Subject</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            <% (logsArr||[]).forEach(a => {
+              const cls = a.status === 'Present' ? 'bg-success' : 'bg-danger';
+            %>
+              <tr>
+                <% if (isView){ %><td><%= a.student_id ? a.student_id.full_name : '-' %></td><% } %>
+                <td><%= a.subject_id ? a.subject_id.name : '-' %></td>
+                <td><%= a.date %></td>
+                <td><span class="status-pill <%= cls %>"><%= a.status %></span></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+    <% } else if (page === 'exam_results') { %>
+      <% if (scores && scores.length) { %>
+        <div class="row g-3">
+          <% scores.forEach(s => {
+            const val = s.score || 0;
+            let border = '#00B87C';
+            if (val < 40) border = '#FF4C61'; else if (val < 70) border = '#0075FF';
+          %>
+            <div class="col-md-3">
+              <div class="result-card" style="border-top:4px solid <%= border %>;">
+                <div class="text-muted small mb-2"><%= s.subject_id ? s.subject_id.name : 'Subject' %></div>
+                <h2 class="fw-bold mb-0"><%= val %></h2>
+                <small class="text-muted">out of 100</small>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info">No exam scores available yet.</div>
+      <% } %>
+
+    <% } else if (page === 'feedback') { %>
+      <div class="card-soft p-4" style="max-width:560px;">
+        <h5 class="fw-bold mb-3">Send Feedback</h5>
+        <form method="POST" action="/app?page=feedback">
+          <input type="hidden" name="action" value="send_feedback">
+          <div class="mb-3"><textarea name="message" class="form-control" rows="5" placeholder="Your feedback..." required></textarea></div>
+          <button class="btn btn-primary">Submit Feedback</button>
+        </form>
+      </div>
+
+    <% } else { %>
+      <div class="alert alert-warning">Page not found.</div>
+    <% } %>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
