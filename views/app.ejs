@@ -128,20 +128,23 @@
     </div>
 
     <a href="/app?page=dashboard" class="nav-link-item <%= page==='dashboard'?'active':'' %>">
-      <i class="fa-solid fa-house"></i> Dashboard
-    </a>
+  <i class="fa-solid fa-house"></i> Dashboard
+</a>
 
-    <% if (user.role === 'admin') { %>
+<% if (user.role === 'admin') { %>
       <div class="nav-header">Academic</div>
       <a href="/app?page=courses" class="nav-link-item <%= page==='courses'?'active':'' %>"><i class="fa-solid fa-book"></i> Courses</a>
       <a href="/app?page=subjects" class="nav-link-item <%= page==='subjects'?'active':'' %>"><i class="fa-solid fa-layer-group"></i> Subjects</a>
+      <a href="/app?page=take_attendance" class="nav-link-item <%= page==='take_attendance'?'active':'' %>"><i class="fa-solid fa-clipboard-check"></i> Take Attendance</a>
+      <a href="/app?page=view_attendance" class="nav-link-item <%= page==='view_attendance'?'active':'' %>"><i class="fa-solid fa-list-check"></i> View Attendance</a>
       <div class="nav-header">Users</div>
       <a href="/app?page=manage_staff" class="nav-link-item <%= page==='manage_staff'?'active':'' %>"><i class="fa-solid fa-user-tie"></i> Manage Staff</a>
       <a href="/app?page=manage_students" class="nav-link-item <%= page==='manage_students'?'active':'' %>"><i class="fa-solid fa-user-graduate"></i> Manage Students</a>
       <div class="nav-header">Requests</div>
       <a href="/app?page=notifications" class="nav-link-item <%= page==='notifications'?'active':'' %>"><i class="fa-solid fa-envelope-open-text"></i> Leave Requests</a>
       <a href="/app?page=notify" class="nav-link-item <%= page==='notify'?'active':'' %>"><i class="fa-solid fa-bullhorn"></i> Send Notice</a>
-    <% } else if (user.role === 'staff') { %>
+
+<% } else if (user.role === 'staff') { %>
       <div class="nav-header">Academic</div>
       <a href="/app?page=take_attendance" class="nav-link-item <%= page==='take_attendance'?'active':'' %>"><i class="fa-solid fa-clipboard-check"></i> Take Attendance</a>
       <a href="/app?page=view_attendance" class="nav-link-item <%= page==='view_attendance'?'active':'' %>"><i class="fa-solid fa-list-check"></i> View Attendance</a>
