@@ -18,7 +18,7 @@ A College Management System built with Node.js, Express.js, MongoDB, and EJS.
 
 ## Admin Dashboard
 
-<img width="1350" alt="Admin Dashboard" src="https://github.com/user-attachments/assets/8c39ebe0-45a7-4ce9-965c-c3604444c42e">
+<img width="1343" height="636" alt="image" src="https://github.com/user-attachments/assets/e2e554b5-87b2-40f0-a0dd-9f27a16619bd" />
 
 ---
 
